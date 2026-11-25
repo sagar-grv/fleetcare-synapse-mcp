@@ -1,0 +1,42 @@
+{
+  "prompt": "Find parts at or below their reorder point and create ONE draft purchase order that restocks each by its reorder_qty. Report the total cost.",
+  "final": "Total cost: 61,400.0.",
+  "steps": [
+    {
+      "role": "user",
+      "content": "Find parts at or below their reorder point and create ONE draft purchase order that restocks each by its reorder_qty. Report the total cost."
+    },
+    {
+      "tool": "list_parts",
+      "args": {
+        "low_stock_only": true
+      },
+      "result": "{\n  \"id\": 1,\n  \"name\": \"Brake pad set (front)\",\n  \"stock\": 2,\n  \"reorder_point\": 6,\n  \"reorder_qty\": 12,\n  \"unit_cost\": 1450.0,\n  \"supplier\": \"AutoSpares Pune\"\n}{\n  \"id\": 3,\n  \"name\": \"Coolant 5L\",\n  \"stock\": 3,\n  \"reorder_point\": 8,\n  \"reorder_qty\": 16,\n  \"unit_cost\": 650.0,\n  \"supplier\": \"LubeCo\"\n}{\n  \"id\": 5,\n  \"name\": \"Battery 12V 65Ah\",\n  \"stock\": 1,\n  \"reorder_point\": 4,\n  \"reorder_qty\": 6,\n  \"unit_cost\": 5600.0,\n  \"supplier\": \"PowerCell\"\n}"
+    },
+    {
+      "tool": "create_purchase_order",
+      "args": {
+        "lines": [
+          {
+            "part_id": 1,
+            "quantity": 12
+          },
+          {
+            "part_id": 3,
+            "quantity": 16
+          },
+          {
+            "part_id": 5,
+            "quantity": 6
+          }
+        ],
+        "note": "Restock parts at or below reorder point"
+      },
+      "result": "{\n  \"id\": 1,\n  \"status\": \"draft\",\n  \"total\": 61400.0\n}"
+    },
+    {
+      "role": "assistant",
+      "content": "Total cost: 61,400.0."
+    }
+  ]
+}
