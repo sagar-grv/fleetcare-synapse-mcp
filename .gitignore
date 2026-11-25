@@ -1,0 +1,4 @@
+fleet.db
+__pycache__/
+.env
+.synapse/surface_cache.json
