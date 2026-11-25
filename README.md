@@ -8,6 +8,7 @@ Track 1 (make an existing backend agent-ready). All data is synthetic.
 - `synapse_auto_server.py` is that file with small, listed edits (below). Synapse says generated files are ours to edit.
 - `agent.py` is an LLM agent (Groq, `openai/gpt-oss-120b`, free tier) that works only through the MCP server. It never touches the DB.
 - `run_demo.py` runs the three tasks against a fresh DB and asserts on the resulting DB state.
+- Demo clip: 84s terminal replay of the recorded run (captioned as a replay, no audio): https://github.com/sagar-grv/fleetcare-synapse-mcp/releases/download/demo-v1/2-fleetcare-terminal-demo.mp4
 - `evidence/` has the full tool-call transcripts of the last run; `DEMO.md` renders them readably.
 
 ## Regenerate the MCP server
