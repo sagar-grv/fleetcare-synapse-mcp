@@ -1,6 +1,6 @@
 {
   "prompt": "Write my morning fleet summary with four labelled sections: (1) vehicles by status, (2) open alerts by severity, (3) low-stock parts, (4) draft work orders and purchase orders that exist now, with total PO cost. End with a list of items that need a human decision and why.",
-  "final": "Vehicles by status: active\u202f5, in_service\u202f1  \nOpen alerts by severity: critical\u202f1, high\u202f1, medium\u202f2, low\u202f1  \nLow\u2011stock parts:\u202f3  \nDraft work orders:\u202f5, draft purchase orders:\u202f1 (total cost\u202f\u20b961,400)  \n\nItems needing human decision:  \n- Work order\u202f#1 \u2013 service center region Mumbai does not match vehicle region Bengaluru.",
+  "final": "**Morning Fleet Summary**\n\n1. **Vehicles by Status**  \n   - Active: 5  \n   - In Service: 1  \n\n2. **Open Alerts by Severity**  \n   - Critical: 1  \n   - High: 1  \n   - Medium: 2  \n   - Low: 1  \n\n3. **Low\u2011Stock Parts**  \n   - 3 parts are at or below their reorder point.  \n\n4. **Draft Work Orders & Purchase Orders**  \n   - Draft Work Orders: 5 (1 of them flagged for review)  \n   - Draft Purchase Orders: 1  \n   - Total PO Cost:\u202f\u20b961,400  \n\n**Items Requiring Human Decision**  \n- **Work Order Review** \u2013 1 draft work order needs human review (as indicated by the system).",
   "steps": [
     {
       "role": "user",
@@ -9,21 +9,11 @@
     {
       "tool": "fleet_summary",
       "args": {},
-      "result": "{\n  \"vehicles_by_status\": [\n    {\n      \"status\": \"active\",\n      \"n\": 5\n    },\n    {\n      \"status\": \"in_service\",\n      \"n\": 1\n    }\n  ],\n  \"open_alerts_by_severity\": [\n    {\n      \"severity\": \"critical\",\n      \"n\": 1\n    },\n    {\n      \"severity\": \"high\",\n      \"n\": 1\n    },\n    {\n      \"severity\": \"low\",\n      \"n\": 1\n    },\n    {\n      \"severity\": \"medium\",\n      \"n\": 2\n    }\n  ],\n  \"low_stock_parts\": 3,\n  \"draft_work_orders\": 5\n}"
-    },
-    {
-      "tool": "list_purchase_orders",
-      "args": {},
-      "result": "{\n  \"id\": 1,\n  \"lines\": \"1x12,3x16,5x6\",\n  \"total\": 61400.0,\n  \"status\": \"draft\",\n  \"note\": \"Restock parts at or below reorder point\"\n}"
-    },
-    {
-      "tool": "list_work_orders",
-      "args": {},
-      "result": "{\n  \"id\": 1,\n  \"alert_id\": 3,\n  \"service_center_id\": 2,\n  \"summary\": \"Engine issue for vehicle KA01-EF-3001\",\n  \"status\": \"draft\",\n  \"needs_human_review\": 1,\n  \"review_reason\": \"Service center region Mumbai does not match vehicle region Bengaluru\"\n}{\n  \"id\": 2,\n  \"alert_id\": 1,\n  \"service_center_id\": 2,\n  \"summary\": \"Brake service for vehicle MH14-CD-2001\",\n  \"status\": \"draft\",\n  \"needs_human_review\": 0,\n  \"review_reason\": null\n}{\n  \"id\": 3,\n  \"alert_id\": 2,\n  \"service_center_id\": 1,\n  \"summary\": \"General maintenance for vehicle MH12-AB-1002\",\n  \"status\": \"draft\",\n  \"needs_human_review\": 0,\n  \"review_reason\": null\n}{\n  \"id\": 4,\n  \"alert_id\": 4,\n  \"service_center_id\": 1,\n  \"summary\": \"Tyre service for vehicle MH12-AB-1001\",\n  \"status\": \"draft\",\n  \"needs_human_review\": 0,\n  \"review_reason\": null\n}{\n  \"id\": 5,\n  \"alert_id\": 5,\n  \"service_center_id\": 3,\n  \"summary\": \"Electrical issue for vehicle MH14-CD-2002\",\n  \"status\": \"draft\",\n  \"needs_human_review\": 0,\n  \"review_reason\": null\n}"
+      "result": "{\n  \"vehicles_by_status\": [\n    {\n      \"status\": \"active\",\n      \"n\": 5\n    },\n    {\n      \"status\": \"in_service\",\n      \"n\": 1\n    }\n  ],\n  \"open_alerts_by_severity\": [\n    {\n      \"severity\": \"critical\",\n      \"n\": 1\n    },\n    {\n      \"severity\": \"high\",\n      \"n\": 1\n    },\n    {\n      \"severity\": \"low\",\n      \"n\": 1\n    },\n    {\n      \"severity\": \"medium\",\n      \"n\": 2\n    }\n  ],\n  \"low_stock_parts\": 3,\n  \"draft_work_orders\": 5,\n  \"work_orders_needing_review\": 1,\n  \"draft_purchase_orders\": 1,\n  \"draft_purchase_total\": 61400.0\n}"
     },
     {
       "role": "assistant",
-      "content": "Vehicles by status: active\u202f5, in_service\u202f1  \nOpen alerts by severity: critical\u202f1, high\u202f1, medium\u202f2, low\u202f1  \nLow\u2011stock parts:\u202f3  \nDraft work orders:\u202f5, draft purchase orders:\u202f1 (total cost\u202f\u20b961,400)  \n\nItems needing human decision:  \n- Work order\u202f#1 \u2013 service center region Mumbai does not match vehicle region Bengaluru."
+      "content": "**Morning Fleet Summary**\n\n1. **Vehicles by Status**  \n   - Active: 5  \n   - In Service: 1  \n\n2. **Open Alerts by Severity**  \n   - Critical: 1  \n   - High: 1  \n   - Medium: 2  \n   - Low: 1  \n\n3. **Low\u2011Stock Parts**  \n   - 3 parts are at or below their reorder point.  \n\n4. **Draft Work Orders & Purchase Orders**  \n   - Draft Work Orders: 5 (1 of them flagged for review)  \n   - Draft Purchase Orders: 1  \n   - Total PO Cost:\u202f\u20b961,400  \n\n**Items Requiring Human Decision**  \n- **Work Order Review** \u2013 1 draft work order needs human review (as indicated by the system)."
     }
   ]
 }
