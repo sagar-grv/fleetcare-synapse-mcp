@@ -1,15 +1,10 @@
 {
   "prompt": "Triage every OPEN alert, most severe first, and create a draft work order for each one. Flag any that need human review.",
-  "final": "Alert 1 \u2192 work order 2 (no human review)  \nAlert 2 \u2192 work order 3 (no human review)  \nAlert 3 \u2192 work order 1 (human review required)  \nAlert 4 \u2192 work order 4 (no human review)  \nAlert 5 \u2192 work order 5 (no human review)",
+  "final": "Open alerts have one draft work order each.",
   "steps": [
     {
       "role": "user",
       "content": "Triage every OPEN alert, most severe first, and create a draft work order for each one. Flag any that need human review."
-    },
-    {
-      "tool": "list_work_orders",
-      "args": {},
-      "result": ""
     },
     {
       "tool": "list_alerts",
@@ -19,77 +14,58 @@
       "result": "{\n  \"id\": 1,\n  \"vehicle_id\": 3,\n  \"code\": \"BRAKE_PAD_WEAR\",\n  \"description\": \"Front brake pads below 15% life\",\n  \"severity\": \"high\",\n  \"status\": \"open\",\n  \"needed_specialty\": \"brakes\"\n}{\n  \"id\": 2,\n  \"vehicle_id\": 2,\n  \"code\": \"OIL_CHANGE_DUE\",\n  \"description\": \"Oil change overdue by 1,200 km\",\n  \"severity\": \"low\",\n  \"status\": \"open\",\n  \"needed_specialty\": \"general\"\n}{\n  \"id\": 3,\n  \"vehicle_id\": 5,\n  \"code\": \"COOLANT_TEMP\",\n  \"description\": \"Engine coolant temperature spikes\",\n  \"severity\": \"critical\",\n  \"status\": \"open\",\n  \"needed_specialty\": \"engine\"\n}{\n  \"id\": 4,\n  \"vehicle_id\": 1,\n  \"code\": \"TYRE_PRESSURE\",\n  \"description\": \"Rear-left tyre pressure low\",\n  \"severity\": \"medium\",\n  \"status\": \"open\",\n  \"needed_specialty\": \"tyres\"\n}{\n  \"id\": 5,\n  \"vehicle_id\": 4,\n  \"code\": \"BATTERY_VOLT\",\n  \"description\": \"Battery voltage low on cold start\",\n  \"severity\": \"medium\",\n  \"status\": \"open\",\n  \"needed_specialty\": \"electrical\"\n}"
     },
     {
-      "tool": "get_vehicle",
+      "tool": "recommend_service_center",
       "args": {
-        "vehicle_id": 5
+        "alert_id": 3
       },
-      "result": "{\n  \"id\": 5,\n  \"plate\": \"KA01-EF-3001\",\n  \"model\": \"Ashok Leyland Dost\",\n  \"type\": \"van\",\n  \"region\": \"Bengaluru\",\n  \"status\": \"active\",\n  \"mileage\": 67300\n}"
+      "result": "{\n  \"alert_id\": 3,\n  \"needed_specialty\": \"engine\",\n  \"vehicle_region\": \"Bengaluru\",\n  \"recommended\": {\n    \"service_center_id\": 2,\n    \"name\": \"Mumbai Heavy Garage\",\n    \"region\": \"Mumbai\",\n    \"capacity_open\": 2,\n    \"same_region\": false,\n    \"needs_human_review\": true,\n    \"review_reason\": \"Center is in Mumbai but vehicle KA01-EF-3001 is in Bengaluru\"\n  },\n  \"alternatives\": [],\n  \"note\": null\n}"
     },
     {
-      "tool": "list_service_centers",
+      "tool": "list_alerts",
       "args": {
-        "specialty": "engine"
+        "severity": "high",
+        "status": "open"
       },
-      "result": "{\n  \"id\": 2,\n  \"name\": \"Mumbai Heavy Garage\",\n  \"region\": \"Mumbai\",\n  \"specialties\": \"brakes,engine,general\",\n  \"capacity_open\": 2\n}"
+      "result": "{\n  \"id\": 1,\n  \"vehicle_id\": 3,\n  \"code\": \"BRAKE_PAD_WEAR\",\n  \"description\": \"Front brake pads below 15% life\",\n  \"severity\": \"high\",\n  \"status\": \"open\",\n  \"needed_specialty\": \"brakes\"\n}"
     },
     {
-      "tool": "list_service_centers",
+      "tool": "recommend_service_center",
       "args": {
-        "specialty": "engine"
+        "alert_id": 1
       },
-      "result": "{\n  \"id\": 2,\n  \"name\": \"Mumbai Heavy Garage\",\n  \"region\": \"Mumbai\",\n  \"specialties\": \"brakes,engine,general\",\n  \"capacity_open\": 2\n}"
+      "result": "{\n  \"alert_id\": 1,\n  \"needed_specialty\": \"brakes\",\n  \"vehicle_region\": \"Mumbai\",\n  \"recommended\": {\n    \"service_center_id\": 2,\n    \"name\": \"Mumbai Heavy Garage\",\n    \"region\": \"Mumbai\",\n    \"capacity_open\": 2,\n    \"same_region\": true,\n    \"needs_human_review\": false,\n    \"review_reason\": null\n  },\n  \"alternatives\": [],\n  \"note\": null\n}"
     },
     {
-      "tool": "get_vehicle",
+      "tool": "recommend_service_center",
       "args": {
-        "vehicle_id": 3
+        "alert_id": 4
       },
-      "result": "{\n  \"id\": 3,\n  \"plate\": \"MH14-CD-2001\",\n  \"model\": \"Eicher Pro 2095\",\n  \"type\": \"truck\",\n  \"region\": \"Mumbai\",\n  \"status\": \"active\",\n  \"mileage\": 120500\n}"
+      "result": "{\n  \"alert_id\": 4,\n  \"needed_specialty\": \"tyres\",\n  \"vehicle_region\": \"Pune\",\n  \"recommended\": {\n    \"service_center_id\": 1,\n    \"name\": \"Pune Quick Service\",\n    \"region\": \"Pune\",\n    \"capacity_open\": 5,\n    \"same_region\": true,\n    \"needs_human_review\": false,\n    \"review_reason\": null\n  },\n  \"alternatives\": [\n    {\n      \"service_center_id\": 4,\n      \"name\": \"Bengaluru Auto Care\",\n      \"region\": \"Bengaluru\",\n      \"capacity_open\": 4,\n      \"same_region\": false,\n      \"needs_human_review\": true,\n      \"review_reason\": \"Center is in Bengaluru but vehicle MH12-AB-1001 is in Pune\"\n    }\n  ],\n  \"note\": null\n}"
     },
     {
-      "tool": "list_service_centers",
+      "tool": "recommend_service_center",
       "args": {
-        "region": "Bengaluru",
-        "specialty": "engine"
+        "alert_id": 5
       },
-      "result": ""
+      "result": "{\n  \"alert_id\": 5,\n  \"needed_specialty\": \"electrical\",\n  \"vehicle_region\": \"Mumbai\",\n  \"recommended\": {\n    \"service_center_id\": 3,\n    \"name\": \"Mumbai Electricals\",\n    \"region\": \"Mumbai\",\n    \"capacity_open\": 1,\n    \"same_region\": true,\n    \"needs_human_review\": false,\n    \"review_reason\": null\n  },\n  \"alternatives\": [\n    {\n      \"service_center_id\": 4,\n      \"name\": \"Bengaluru Auto Care\",\n      \"region\": \"Bengaluru\",\n      \"capacity_open\": 4,\n      \"same_region\": false,\n      \"needs_human_review\": true,\n      \"review_reason\": \"Center is in Bengaluru but vehicle MH14-CD-2002 is in Mumbai\"\n    }\n  ],\n  \"note\": null\n}"
     },
     {
-      "tool": "list_service_centers",
-      "args": {},
-      "result": "{\n  \"id\": 1,\n  \"name\": \"Pune Quick Service\",\n  \"region\": \"Pune\",\n  \"specialties\": \"general,tyres\",\n  \"capacity_open\": 5\n}{\n  \"id\": 2,\n  \"name\": \"Mumbai Heavy Garage\",\n  \"region\": \"Mumbai\",\n  \"specialties\": \"brakes,engine,general\",\n  \"capacity_open\": 2\n}{\n  \"id\": 3,\n  \"name\": \"Mumbai Electricals\",\n  \"region\": \"Mumbai\",\n  \"specialties\": \"electrical\",\n  \"capacity_open\": 1\n}{\n  \"id\": 4,\n  \"name\": \"Bengaluru Auto Care\",\n  \"region\": \"Bengaluru\",\n  \"specialties\": \"general,tyres,electrical\",\n  \"capacity_open\": 4\n}"
-    },
-    {
-      "tool": "get_vehicle",
+      "tool": "recommend_service_center",
       "args": {
-        "vehicle_id": 1
+        "alert_id": 2
       },
-      "result": "{\n  \"id\": 1,\n  \"plate\": \"MH12-AB-1001\",\n  \"model\": \"Tata Ace\",\n  \"type\": \"van\",\n  \"region\": \"Pune\",\n  \"status\": \"active\",\n  \"mileage\": 48210\n}"
-    },
-    {
-      "tool": "get_vehicle",
-      "args": {
-        "vehicle_id": 4
-      },
-      "result": "{\n  \"id\": 4,\n  \"plate\": \"MH14-CD-2002\",\n  \"model\": \"Eicher Pro 2095\",\n  \"type\": \"truck\",\n  \"region\": \"Mumbai\",\n  \"status\": \"in_service\",\n  \"mileage\": 133900\n}"
-    },
-    {
-      "tool": "get_vehicle",
-      "args": {
-        "vehicle_id": 2
-      },
-      "result": "{\n  \"id\": 2,\n  \"plate\": \"MH12-AB-1002\",\n  \"model\": \"Tata Ace\",\n  \"type\": \"van\",\n  \"region\": \"Pune\",\n  \"status\": \"active\",\n  \"mileage\": 91400\n}"
+      "result": "{\n  \"alert_id\": 2,\n  \"needed_specialty\": \"general\",\n  \"vehicle_region\": \"Pune\",\n  \"recommended\": {\n    \"service_center_id\": 1,\n    \"name\": \"Pune Quick Service\",\n    \"region\": \"Pune\",\n    \"capacity_open\": 5,\n    \"same_region\": true,\n    \"needs_human_review\": false,\n    \"review_reason\": null\n  },\n  \"alternatives\": [\n    {\n      \"service_center_id\": 4,\n      \"name\": \"Bengaluru Auto Care\",\n      \"region\": \"Bengaluru\",\n      \"capacity_open\": 4,\n      \"same_region\": false,\n      \"needs_human_review\": true,\n      \"review_reason\": \"Center is in Bengaluru but vehicle MH12-AB-1002 is in Pune\"\n    },\n    {\n      \"service_center_id\": 2,\n      \"name\": \"Mumbai Heavy Garage\",\n      \"region\": \"Mumbai\",\n      \"capacity_open\": 2,\n      \"same_region\": false,\n      \"needs_human_review\": true,\n      \"review_reason\": \"Center is in Mumbai but vehicle MH12-AB-1002 is in Pune\"\n    }\n  ],\n  \"note\": null\n}"
     },
     {
       "tool": "create_work_order",
       "args": {
         "alert_id": 3,
         "needs_human_review": true,
-        "review_reason": "Service center region Mumbai does not match vehicle region Bengaluru",
+        "review_reason": "Center is in Mumbai but vehicle KA01-EF-3001 is in Bengaluru",
         "service_center_id": 2,
-        "summary": "Engine issue for vehicle KA01-EF-3001"
+        "summary": "Engine coolant temperature spikes"
       },
-      "result": "{\n  \"id\": 1,\n  \"status\": \"draft\"\n}"
+      "result": "{\n  \"id\": 1,\n  \"status\": \"draft\",\n  \"needs_human_review\": true,\n  \"review_reason\": \"Center is in Mumbai but vehicle KA01-EF-3001 is in Bengaluru\"\n}"
     },
     {
       "tool": "create_work_order",
@@ -98,20 +74,9 @@
         "needs_human_review": false,
         "review_reason": null,
         "service_center_id": 2,
-        "summary": "Brake service for vehicle MH14-CD-2001"
+        "summary": "Front brake pads below 15% life"
       },
-      "result": "{\n  \"id\": 2,\n  \"status\": \"draft\"\n}"
-    },
-    {
-      "tool": "create_work_order",
-      "args": {
-        "alert_id": 2,
-        "needs_human_review": false,
-        "review_reason": null,
-        "service_center_id": 1,
-        "summary": "General maintenance for vehicle MH12-AB-1002"
-      },
-      "result": "{\n  \"id\": 3,\n  \"status\": \"draft\"\n}"
+      "result": "{\n  \"id\": 2,\n  \"status\": \"draft\",\n  \"needs_human_review\": false,\n  \"review_reason\": null\n}"
     },
     {
       "tool": "create_work_order",
@@ -120,9 +85,9 @@
         "needs_human_review": false,
         "review_reason": null,
         "service_center_id": 1,
-        "summary": "Tyre service for vehicle MH12-AB-1001"
+        "summary": "Rear-left tyre pressure low"
       },
-      "result": "{\n  \"id\": 4,\n  \"status\": \"draft\"\n}"
+      "result": "{\n  \"id\": 3,\n  \"status\": \"draft\",\n  \"needs_human_review\": false,\n  \"review_reason\": null\n}"
     },
     {
       "tool": "create_work_order",
@@ -131,18 +96,29 @@
         "needs_human_review": false,
         "review_reason": null,
         "service_center_id": 3,
-        "summary": "Electrical issue for vehicle MH14-CD-2002"
+        "summary": "Battery voltage low on cold start"
       },
-      "result": "{\n  \"id\": 5,\n  \"status\": \"draft\"\n}"
+      "result": "{\n  \"id\": 4,\n  \"status\": \"draft\",\n  \"needs_human_review\": false,\n  \"review_reason\": null\n}"
+    },
+    {
+      "tool": "create_work_order",
+      "args": {
+        "alert_id": 2,
+        "needs_human_review": false,
+        "review_reason": null,
+        "service_center_id": 1,
+        "summary": "Oil change overdue by 1,200 km"
+      },
+      "result": "{\n  \"id\": 5,\n  \"status\": \"draft\",\n  \"needs_human_review\": false,\n  \"review_reason\": null\n}"
     },
     {
       "tool": "list_work_orders",
       "args": {},
-      "result": "{\n  \"id\": 1,\n  \"alert_id\": 3,\n  \"service_center_id\": 2,\n  \"summary\": \"Engine issue for vehicle KA01-EF-3001\",\n  \"status\": \"draft\",\n  \"needs_human_review\": 1,\n  \"review_reason\": \"Service center region Mumbai does not match vehicle region Bengaluru\"\n}{\n  \"id\": 2,\n  \"alert_id\": 1,\n  \"service_center_id\": 2,\n  \"summary\": \"Brake service for vehicle MH14-CD-2001\",\n  \"status\": \"draft\",\n  \"needs_human_review\": 0,\n  \"review_reason\": null\n}{\n  \"id\": 3,\n  \"alert_id\": 2,\n  \"service_center_id\": 1,\n  \"summary\": \"General maintenance for vehicle MH12-AB-1002\",\n  \"status\": \"draft\",\n  \"needs_human_review\": 0,\n  \"review_reason\": null\n}{\n  \"id\": 4,\n  \"alert_id\": 4,\n  \"service_center_id\": 1,\n  \"summary\": \"Tyre service for vehicle MH12-AB-1001\",\n  \"status\": \"draft\",\n  \"needs_human_review\": 0,\n  \"review_reason\": null\n}{\n  \"id\": 5,\n  \"alert_id\": 5,\n  \"service_center_id\": 3,\n  \"summary\": \"Electrical issue for vehicle MH14-CD-2002\",\n  \"status\": \"draft\",\n  \"needs_human_review\": 0,\n  \"review_reason\": null\n}"
+      "result": "{\n  \"id\": 1,\n  \"alert_id\": 3,\n  \"service_center_id\": 2,\n  \"summary\": \"Engine coolant temperature spikes\",\n  \"status\": \"draft\",\n  \"needs_human_review\": 1,\n  \"review_reason\": \"Center is in Mumbai but vehicle KA01-EF-3001 is in Bengaluru\"\n}{\n  \"id\": 2,\n  \"alert_id\": 1,\n  \"service_center_id\": 2,\n  \"summary\": \"Front brake pads below 15% life\",\n  \"status\": \"draft\",\n  \"needs_human_review\": 0,\n  \"review_reason\": null\n}{\n  \"id\": 3,\n  \"alert_id\": 4,\n  \"service_center_id\": 1,\n  \"summary\": \"Rear-left tyre pressure low\",\n  \"status\": \"draft\",\n  \"needs_human_review\": 0,\n  \"review_reason\": null\n}{\n  \"id\": 4,\n  \"alert_id\": 5,\n  \"service_center_id\": 3,\n  \"summary\": \"Battery voltage low on cold start\",\n  \"status\": \"draft\",\n  \"needs_human_review\": 0,\n  \"review_reason\": null\n}{\n  \"id\": 5,\n  \"alert_id\": 2,\n  \"service_center_id\": 1,\n  \"summary\": \"Oil change overdue by 1,200 km\",\n  \"status\": \"draft\",\n  \"needs_human_review\": 0,\n  \"review_reason\": null\n}"
     },
     {
       "role": "assistant",
-      "content": "Alert 1 \u2192 work order 2 (no human review)  \nAlert 2 \u2192 work order 3 (no human review)  \nAlert 3 \u2192 work order 1 (human review required)  \nAlert 4 \u2192 work order 4 (no human review)  \nAlert 5 \u2192 work order 5 (no human review)"
+      "content": "Open alerts have one draft work order each."
     }
   ]
 }
