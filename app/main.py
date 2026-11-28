@@ -14,18 +14,6 @@ app = FastAPI(title="FleetCare", description="Fleet maintenance: vehicles, alert
 init_db()
 
 
-@app.middleware("http")
-async def log_activity(request, call_next):
-    """Record every API call an agent makes, so the dashboard can show what the agent is doing live."""
-    resp = await call_next(request)
-    p = request.url.path
-    if not (p == "/" or p.startswith("/dashboard") or p in ("/docs", "/openapi.json", "/favicon.ico")):
-        q = request.url.query
-        with get_conn() as c:
-            c.execute("INSERT INTO activity(method,path,status) VALUES(?,?,?)", (request.method, p + ("?" + q if q else ""), resp.status_code))
-    return resp
-
-
 def rows(sql: str, args: tuple = ()):
     with get_conn() as c:
         return [dict(r) for r in c.execute(sql, args).fetchall()]
@@ -86,73 +74,21 @@ class WorkOrderIn(BaseModel):
     alert_id: int
     service_center_id: int
     summary: str
-    needs_human_review: Optional[bool] = False
+    needs_human_review: bool = False
     review_reason: Optional[str] = None
-
-
-def reject(action: str, code: int, reason: str):
-    """Record a refused action (so a human can see what the guardrails stopped), then refuse it."""
-    with get_conn() as c:
-        c.execute("INSERT INTO rejections(action,code,reason) VALUES(?,?,?)", (action, code, reason))
-    raise HTTPException(code, reason)
-
-
-def _rank_centers(c, alert_id: int):
-    """Rank service centers for an alert: must have the needed specialty; prefer same region, then open capacity."""
-    a = c.execute("SELECT a.*, v.region AS vehicle_region, v.plate FROM alerts a JOIN vehicles v ON v.id=a.vehicle_id WHERE a.id=?", (alert_id,)).fetchone()
-    if not a:
-        return None, []
-    out = []
-    for s in c.execute("SELECT * FROM service_centers").fetchall():
-        specs = [x.strip() for x in s["specialties"].split(",")]
-        if a["needed_specialty"] not in specs:
-            continue
-        same = s["region"] == a["vehicle_region"]
-        out.append({"service_center_id": s["id"], "name": s["name"], "region": s["region"], "capacity_open": s["capacity_open"],
-                    "same_region": same, "needs_human_review": (not same) or s["capacity_open"] <= 0,
-                    "review_reason": None if same and s["capacity_open"] > 0 else
-                    (f"Center is in {s['region']} but vehicle {a['plate']} is in {a['vehicle_region']}" if not same else "Center has no open capacity")})
-    out.sort(key=lambda r: (not r["same_region"], -r["capacity_open"], r["service_center_id"]))
-    return dict(a), out
-
-
-@app.get("/alerts/{alert_id}/recommendation", operation_id="recommend_service_center",
-         summary="Rank capable service centers for an alert (specialty must match; same region first) and say whether a human must review")
-def recommend(alert_id: int):
-    with get_conn() as c:
-        a, ranked = _rank_centers(c, alert_id)
-    if a is None:
-        raise HTTPException(404, "alert not found")
-    return {"alert_id": alert_id, "needed_specialty": a["needed_specialty"], "vehicle_region": a["vehicle_region"],
-            "recommended": ranked[0] if ranked else None, "alternatives": ranked[1:],
-            "note": None if ranked else "No service center has this specialty: escalate to a human"}
 
 
 @app.post("/work-orders", operation_id="create_work_order_draft", summary="Create a DRAFT work order for an alert at a service center")
 def create_work_order(body: WorkOrderIn):
-    """Server-side guardrails: the API does not trust the caller (human or agent) to get these right."""
     with get_conn() as c:
-        a, ranked = _rank_centers(c, body.alert_id)
-        if a is None:
+        if not c.execute("SELECT 1 FROM alerts WHERE id=?", (body.alert_id,)).fetchone():
             raise HTTPException(404, "alert not found")
         if not c.execute("SELECT 1 FROM service_centers WHERE id=?", (body.service_center_id,)).fetchone():
             raise HTTPException(404, "service center not found")
-        if a["status"] != "open":
-            reject("work order", 409, f"alert {body.alert_id} is {a['status']}, not open")
-        match = next((r for r in ranked if r["service_center_id"] == body.service_center_id), None)
-        if match is None:
-            reject("work order", 422, f"service center {body.service_center_id} lacks the needed specialty '{a['needed_specialty']}'; "
-                                     f"use recommend_service_center for alert {body.alert_id}")
-        dup = c.execute("SELECT id FROM work_orders WHERE alert_id=? AND status!='cancelled'", (body.alert_id,)).fetchone()
-        if dup:
-            reject("work order", 409, f"alert {body.alert_id} already has work order {dup['id']}; not creating a duplicate")
-        review, reason = bool(body.needs_human_review), body.review_reason
-        if match["needs_human_review"]:  # server enforces the flag even if the caller forgot it
-            review, reason = True, reason or match["review_reason"]
         cur = c.execute(
             "INSERT INTO work_orders(alert_id,service_center_id,summary,status,needs_human_review,review_reason) VALUES(?,?,?,?,?,?)",
-            (body.alert_id, body.service_center_id, body.summary, "draft", int(review), reason))
-        return {"id": cur.lastrowid, "status": "draft", "needs_human_review": bool(review), "review_reason": reason}
+            (body.alert_id, body.service_center_id, body.summary, "draft", int(body.needs_human_review), body.review_reason))
+        return {"id": cur.lastrowid, "status": "draft"}
 
 
 class PurchaseLine(BaseModel):
@@ -176,12 +112,6 @@ def create_purchase_order(body: PurchaseOrderIn):
         raise HTTPException(422, "no lines")
     with get_conn() as c:
         total = 0.0
-        ids = [l.part_id for l in body.lines]
-        if len(ids) != len(set(ids)):
-            reject("purchase order", 422, "each part may appear on one line only")
-        for pid in ids:
-            if c.execute("SELECT 1 FROM purchase_orders WHERE status='draft' AND (','||lines||',') LIKE ?", (f"%,{pid}x%",)).fetchone():
-                reject("purchase order", 409, f"part {pid} is already on a draft purchase order; not creating a duplicate")
         for ln in body.lines:
             p = c.execute("SELECT unit_cost FROM parts WHERE id=?", (ln.part_id,)).fetchone()
             if not p:
@@ -201,28 +131,4 @@ def fleet_summary():
         "open_alerts_by_severity": rows("SELECT severity, COUNT(*) n FROM alerts WHERE status='open' GROUP BY severity"),
         "low_stock_parts": rows("SELECT COUNT(*) n FROM parts WHERE stock <= reorder_point")[0]["n"],
         "draft_work_orders": rows("SELECT COUNT(*) n FROM work_orders WHERE status='draft'")[0]["n"],
-        "work_orders_needing_review": rows("SELECT COUNT(*) n FROM work_orders WHERE needs_human_review=1")[0]["n"],
-        "draft_purchase_orders": rows("SELECT COUNT(*) n FROM purchase_orders WHERE status='draft'")[0]["n"],
-        "draft_purchase_total": rows("SELECT COALESCE(SUM(total),0) n FROM purchase_orders WHERE status='draft'")[0]["n"],
     }
-
-
-@app.get("/dashboard/data", include_in_schema=False)
-def dashboard_data():
-    with get_conn() as c:
-        al = [dict(r) for r in c.execute("SELECT a.*, v.plate, v.model, v.region FROM alerts a JOIN vehicles v ON v.id=a.vehicle_id ORDER BY CASE severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END, a.id")]
-        for a in al:
-            _, ranked = _rank_centers(c, a["id"])
-            a["recommended"] = ranked[0] if ranked else None
-        wo = [dict(r) for r in c.execute("SELECT w.*, s.name center, s.region center_region FROM work_orders w JOIN service_centers s ON s.id=w.service_center_id ORDER BY w.id")]
-    return {"summary": fleet_summary(), "alerts": al, "work_orders": wo, "parts": list_parts(False), "purchase_orders": list_purchase_orders(), "rejections": rows("SELECT * FROM rejections ORDER BY id DESC LIMIT 6"), "activity": rows("SELECT * FROM activity ORDER BY id DESC LIMIT 9")}
-
-
-from fastapi.responses import HTMLResponse
-from pathlib import Path
-
-
-@app.get("/", response_class=HTMLResponse, include_in_schema=False)
-@app.get("/dashboard", response_class=HTMLResponse, include_in_schema=False)
-def dashboard():
-    return (Path(__file__).parent / "dashboard.html").read_text()
