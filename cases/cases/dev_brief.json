@@ -1,0 +1,10 @@
+{
+ "id": "dev_brief",
+ "task": "briefing",
+ "instruction": "Morning brief.",
+ "targets": {},
+ "fixture_db": null,
+ "allowed_actions": [
+  "read"
+ ]
+}
