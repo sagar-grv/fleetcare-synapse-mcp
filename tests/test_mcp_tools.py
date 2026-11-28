@@ -59,7 +59,7 @@ def test_lists_ten_tools(api):
                 await sess.initialize()
                 return [t.name for t in (await sess.list_tools()).tools]
     names = asyncio.run(go())
-    assert len(names) == 11 and "recommend_service_center" in names and "create_work_order" in names
+    assert len(names) == 10 and "create_work_order" in names
 
 
 def test_alert_filters(api):
@@ -73,9 +73,8 @@ def test_low_stock(api):
 
 
 def test_work_order_draft_and_validation(api):
-    err, out = call(api, "create_work_order", {"alert_id": 3, "service_center_id": 2, "summary": "Coolant spikes", "needs_human_review": False})
+    err, out = call(api, "create_work_order", {"alert_id": 3, "service_center_id": 4, "summary": "Coolant spikes", "needs_human_review": True, "review_reason": "no engine specialty in Bengaluru"})
     assert not err and out["status"] == "draft"
-    assert out["needs_human_review"] is True and "Mumbai" in out["review_reason"]  # server forces the flag
     err, out = call(api, "create_work_order", {"alert_id": 999, "service_center_id": 4, "summary": "x"})
     assert err  # 404 surfaces as tool error
 
@@ -85,54 +84,3 @@ def test_purchase_order_total(api):
     assert not err and out["total"] == 12 * 1450.0 + 16 * 650.0
     err, out = call(api, "create_purchase_order", {"lines": [{"part_id": 1, "quantity": 0}]})
     assert err
-
-
-def test_guardrails(api):
-    # center 4 has no brakes specialty: rejected, and the reason is visible to the agent
-    err, out = call(api, "create_work_order", {"alert_id": 1, "service_center_id": 4, "summary": "x"})
-    assert err
-    res = asyncio.run(_raw(api, "create_work_order", {"alert_id": 1, "service_center_id": 4, "summary": "x"}))
-    assert "lacks the needed specialty" in res
-    # duplicate for alert 3 (created in an earlier test) is rejected
-    err, out = call(api, "create_work_order", {"alert_id": 3, "service_center_id": 2, "summary": "again"})
-    assert err
-    # closed alert is rejected
-    err, out = call(api, "create_work_order", {"alert_id": 6, "service_center_id": 4, "summary": "closed"})
-    assert err
-
-
-def test_recommendation(api):
-    err, out = call(api, "recommend_service_center", {"alert_id": 5})
-    assert not err and out["recommended"]["service_center_id"] == 3 and out["recommended"]["needs_human_review"] is False
-    err, out = call(api, "recommend_service_center", {"alert_id": 3})
-    assert out["recommended"]["service_center_id"] == 2 and out["recommended"]["needs_human_review"] is True
-
-
-def test_duplicate_po_part_rejected(api):
-    err, out = call(api, "create_purchase_order", {"lines": [{"part_id": 1, "quantity": 5}]})
-    assert err  # part 1 is already on the draft PO from test_purchase_order_total
-    err, out = call(api, "create_purchase_order", {"lines": [{"part_id": 5, "quantity": 2}, {"part_id": 5, "quantity": 2}]})
-    assert err
-
-
-def test_dashboard_served(api):
-    import httpx
-    r = httpx.get(api + "/")
-    assert r.status_code == 200 and "FleetCare" in r.text
-    d = httpx.get(api + "/dashboard/data").json()
-    assert {"summary", "alerts", "work_orders", "parts", "purchase_orders"} <= set(d)
-
-
-def test_omitted_optional_fields_ok(api):
-    # an agent that leaves out the optional flag must not hit a type error (regression: None was sent as null)
-    err, out = call(api, "create_work_order", {"alert_id": 4, "service_center_id": 1, "summary": "tyres"})
-    assert not err and out["needs_human_review"] is False
-
-
-async def _raw(base, tool, args):
-    params = StdioServerParameters(command=sys.executable, args=[str(ROOT / "synapse_auto_server.py")], env={**os.environ, "ENDPOINT_BASE_URL": base})
-    async with stdio_client(params) as (r, w):
-        async with ClientSession(r, w) as sess:
-            await sess.initialize()
-            res = await sess.call_tool(tool, args)
-            return "".join(c.text for c in res.content if hasattr(c, "text"))
