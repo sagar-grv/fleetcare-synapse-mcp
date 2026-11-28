@@ -21,8 +21,6 @@ CREATE TABLE IF NOT EXISTS alerts(id INTEGER PRIMARY KEY, vehicle_id INTEGER, co
 CREATE TABLE IF NOT EXISTS parts(id INTEGER PRIMARY KEY, name TEXT, stock INTEGER, reorder_point INTEGER, reorder_qty INTEGER, unit_cost REAL, supplier TEXT);
 CREATE TABLE IF NOT EXISTS service_centers(id INTEGER PRIMARY KEY, name TEXT, region TEXT, specialties TEXT, capacity_open INTEGER);
 CREATE TABLE IF NOT EXISTS work_orders(id INTEGER PRIMARY KEY, alert_id INTEGER, service_center_id INTEGER, summary TEXT, status TEXT, needs_human_review INTEGER, review_reason TEXT);
-CREATE TABLE IF NOT EXISTS rejections(id INTEGER PRIMARY KEY, at TEXT DEFAULT CURRENT_TIMESTAMP, action TEXT, code INTEGER, reason TEXT);
-CREATE TABLE IF NOT EXISTS activity(id INTEGER PRIMARY KEY, at TEXT DEFAULT CURRENT_TIMESTAMP, method TEXT, path TEXT, status INTEGER);
 CREATE TABLE IF NOT EXISTS purchase_orders(id INTEGER PRIMARY KEY, lines TEXT, total REAL, status TEXT, note TEXT);
 """
 
