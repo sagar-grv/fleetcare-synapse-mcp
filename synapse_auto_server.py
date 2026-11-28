@@ -15,16 +15,6 @@ from mcp.server.fastmcp import FastMCP
 mcp = FastMCP("fleetcare")
 
 
-def _check(resp) -> None:
-    """Raise with the API's own error detail so the agent can correct itself (the plain HTTP error hid it)."""
-    if resp.status_code >= 400:
-        try:
-            detail = resp.json().get("detail", resp.text)
-        except ValueError:
-            detail = resp.text
-        raise RuntimeError(f"HTTP {resp.status_code}: {detail}")
-
-
 def BASE() -> str:
     return os.environ["ENDPOINT_BASE_URL"]
 
@@ -34,7 +24,7 @@ def list_vehicles(status: Any = None, region: Any = None) -> Any:
     url = f"{BASE()}/vehicles"
     headers = {}
     resp = requests.get(url, headers=headers, params={k: v for k, v in {"status": status, "region": region}.items() if v is not None})
-    _check(resp)
+    resp.raise_for_status()
     try:
         return resp.json()
     except ValueError:
@@ -46,7 +36,7 @@ def get_vehicle(vehicle_id: Any = None) -> Any:
     url = f"{BASE()}/vehicles/{vehicle_id}"
     headers = {}
     resp = requests.get(url, headers=headers)
-    _check(resp)
+    resp.raise_for_status()
     try:
         return resp.json()
     except ValueError:
@@ -58,7 +48,7 @@ def list_alerts(status: Any = None, severity: Any = None) -> Any:
     url = f"{BASE()}/alerts"
     headers = {}
     resp = requests.get(url, headers=headers, params={k: v for k, v in {"status": status, "severity": severity}.items() if v is not None})
-    _check(resp)
+    resp.raise_for_status()
     try:
         return resp.json()
     except ValueError:
@@ -70,7 +60,7 @@ def list_parts(low_stock_only: Any = None) -> Any:
     url = f"{BASE()}/parts"
     headers = {}
     resp = requests.get(url, headers=headers, params={k: v for k, v in {"low_stock_only": low_stock_only}.items() if v is not None})
-    _check(resp)
+    resp.raise_for_status()
     try:
         return resp.json()
     except ValueError:
@@ -82,19 +72,11 @@ def list_service_centers(region: Any = None, specialty: Any = None) -> Any:
     url = f"{BASE()}/service-centers"
     headers = {}
     resp = requests.get(url, headers=headers, params={k: v for k, v in {"region": region, "specialty": specialty}.items() if v is not None})
-    _check(resp)
+    resp.raise_for_status()
     try:
         return resp.json()
     except ValueError:
         return {"status_code": resp.status_code, "text": resp.text}
-
-
-@mcp.tool(name="recommend_service_center", description="For one alert_id, rank the service centers that have the needed specialty (same region first) and say whether a human must review the pick. Use this before create_work_order.")
-def recommend_service_center(alert_id: Any = None) -> Any:
-    url = f"{BASE()}/alerts/{alert_id}/recommendation"
-    resp = requests.get(url, headers={})
-    _check(resp)
-    return resp.json()
 
 
 @mcp.tool(name="list_work_orders", description="List existing work orders (drafts included).")
@@ -102,20 +84,20 @@ def list_work_orders() -> Any:
     url = f"{BASE()}/work-orders"
     headers = {}
     resp = requests.get(url, headers=headers)
-    _check(resp)
+    resp.raise_for_status()
     try:
         return resp.json()
     except ValueError:
         return {"status_code": resp.status_code, "text": resp.text}
 
 
-@mcp.tool(name="create_work_order", description="Create a DRAFT work order (never dispatched). Args: alert_id, service_center_id, summary, needs_human_review (bool), review_reason. The API rejects duplicates, closed alerts and centers without the needed specialty, and forces needs_human_review when the center is outside the vehicle region.")
+@mcp.tool(name="create_work_order", description="Create a DRAFT work order (never dispatched). Args: alert_id, service_center_id, summary, needs_human_review (bool), review_reason. Set needs_human_review=true when the chosen center is not in the alert vehicle region or lacks the needed specialty.")
 def create_work_order(alert_id: Any = None, service_center_id: Any = None, summary: Any = None, needs_human_review: Any = None, review_reason: Any = None) -> Any:
     url = f"{BASE()}/work-orders"
     headers = {}
     payload = {"alert_id": alert_id, "service_center_id": service_center_id, "summary": summary, "needs_human_review": needs_human_review, "review_reason": review_reason}
-    resp = requests.post(url, headers=headers, json={k: v for k, v in payload.items() if v is not None})
-    _check(resp)
+    resp = requests.post(url, headers=headers, json=payload)
+    resp.raise_for_status()
     try:
         return resp.json()
     except ValueError:
@@ -127,7 +109,7 @@ def list_purchase_orders() -> Any:
     url = f"{BASE()}/purchase-orders"
     headers = {}
     resp = requests.get(url, headers=headers)
-    _check(resp)
+    resp.raise_for_status()
     try:
         return resp.json()
     except ValueError:
@@ -139,8 +121,8 @@ def create_purchase_order(lines: Any = None, note: Any = None) -> Any:
     url = f"{BASE()}/purchase-orders"
     headers = {}
     payload = {"lines": lines, "note": note}
-    resp = requests.post(url, headers=headers, json={k: v for k, v in payload.items() if v is not None})
-    _check(resp)
+    resp = requests.post(url, headers=headers, json=payload)
+    resp.raise_for_status()
     try:
         return resp.json()
     except ValueError:
@@ -152,7 +134,7 @@ def fleet_summary() -> Any:
     url = f"{BASE()}/fleet/summary"
     headers = {}
     resp = requests.get(url, headers=headers)
-    _check(resp)
+    resp.raise_for_status()
     try:
         return resp.json()
     except ValueError:
