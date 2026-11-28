@@ -1,0 +1,4 @@
+35a02ad10ec0b1e2413e39338242ae94d7c82a758fa7c075e26ee5f85ce5f41f  app/__init__.py
+5e3d81756e20d4bb41191c0f3bbd94a5c2536474eb099c6934b158add9a9e737  app/db.py
+1f33f94ff56ddd182181d70ffbe7d2044bc9cca96ebba886dfcd881b0ee4da6f  app/main.py
+13a39b93c15e62f21909b62d781805cbe476ae90a4f9cc12ea351d141d8ac381  synapse_auto_server.generated.py
