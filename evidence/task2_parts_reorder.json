@@ -1,6 +1,6 @@
 {
   "prompt": "Find parts at or below their reorder point and create ONE draft purchase order that restocks each by its reorder_qty. Report the total cost.",
-  "final": "Total cost: 61400.0. Purchase order draft ID 1 created.",
+  "final": "Total cost: 61,400.0.",
   "steps": [
     {
       "role": "user",
@@ -36,7 +36,7 @@
     },
     {
       "role": "assistant",
-      "content": "Total cost: 61400.0. Purchase order draft ID 1 created."
+      "content": "Total cost: 61,400.0."
     }
   ]
 }
